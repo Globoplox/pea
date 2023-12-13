@@ -5,8 +5,8 @@ There is no pea emoji, but I WANT an emoji here so there is a melon.
 
 This is an implementation of [dlidstrom/NeuralNetworkInAllLangs](https://github.com/dlidstrom/NeuralNetworkInAllLangs) in crystal lang.  
 
-[!NOTE]
-This repository exists only for my own entertainment.  
+> [!NOTE]
+> This repository exists only for my own entertainment.  
 
 I understand the basics of the theory of simple neural networks, but I don't have the math for it so I moslty translated the GO implementation.  
 I did it because I wanted to like two hours ago but I don't remind why. I think it seemed fun. Neural networks look fun.  
