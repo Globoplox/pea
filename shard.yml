@@ -1,0 +1,9 @@
+name: pea
+version: 0.1.0
+
+authors:
+  - globoplox <globoplox@gmail.com>
+
+crystal: '>= 1.10.1'
+
+license: MIT
