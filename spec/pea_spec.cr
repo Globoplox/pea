@@ -1,4 +1,6 @@
 require "./spec_helper"
+require "http/client"
+require "compress/zip"
 
 class PredictableRNG
   include Random
@@ -25,7 +27,6 @@ end
 describe PredictableRNG do
   it "Generate predicted numbers" do
     rng = PredictableRNG.new
-
 
     expected = [
       7.82636925942561e-06,
@@ -77,4 +78,82 @@ describe Pea do
     end
     
   end
+
+  it "Learn to recognize digits" do
+
+    data = nil
+    if File.exists? "semeion.data"
+      data = File.read_lines "semeion.data"
+    else
+      response = HTTP::Client.get "https://archive.ics.uci.edu/static/public/178/semeion+handwritten+digit.zip"
+      raise "Could not fetch the semeion dataset: '#{response.body}'" unless response.success?
+      Compress::Zip::Reader.open IO::Memory.new(response.body), &.each_entry do |entry|
+        next unless entry.filename == "semeion.data"
+        data = entry.io.gets_to_end.split "\r\n", remove_empty: true
+      end
+      raise "Could not find data file in the dataset" if data.nil?
+      File.write "semeion.data", data.join '\n'
+    end
+
+    dataset = data.map do |line|
+      entry = line.split ' '
+      input = entry[start: 0, count: 16 * 16]
+      output = entry[start: 256, count: 10]
+      {input.map(&.to_f64), output.map(&.to_i.to_f64)}
+    end
+
+    dataset = dataset.shuffle
+
+    # I get significantly higher accuracy when learning the whole dataset
+    # (as shown in the csharp implem i think ?),
+    # than when splitting into train/test
+    # Im probably bullshitting away but wouldn't that mean that the network is overfit and just learned the train set as is ?
+    # Learning the whole data set I can get over 99.5% accuracy
+    # With a split 90/10 I get around 87% accuracy, varying from 83 to 90 between run.
+    # With a 50/50 split I get around 84% accurcay, best 85.
+
+    # I have played with hyper parameters (hidden layer size, learn/train, cycle and learning rate) and without overfit, i cant get past 85% accuracy.
+    # What should I leverage ? Cutting into the weigth randomly during training to break patterns ?
+    # Adding layers ?
+    # Convolutions ? What are they ?
+
+    train_set_size = 0.5
+    # Split each subdataset, not the whole dataset
+    # So we ensure it lean/test enough of each possible digit
+    dataset = dataset.group_by(&.[1]).values.map do |dataset|
+      train_set = dataset[...(dataset.size * train_set_size).floor.to_i]
+      test_set = dataset[(dataset.size * train_set_size).floor.to_i..]
+      {train_set, test_set}
+    end
+    train_set = dataset.flat_map &.[0]
+    test_set = dataset.flat_map &.[1]
+    
+    network = Pea::Network.new input: 256, hidden: 14, output: 10
+
+    20.times do
+      train_set.shuffle.each do |input, output|
+        network.train input, output, learning_rate: 0.5f64
+      end
+    end
+
+    20.times do
+      train_set.shuffle.each do |input, output|
+        network.train input, output, learning_rate: 0.1f64
+      end
+    end
+    
+    failure = 0
+    test_set.each do |input, output|
+      got = network.predict input
+      got = booly got
+      output = booly output
+      failure += 1 if got != output
+    end
+
+    accuracy = 100 - failure * 100 / test_set.size
+    puts "Accuracy: #{accuracy}%"
+
+    accuracy.should be > 95.0
+  
+ end
 end

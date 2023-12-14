@@ -17,7 +17,7 @@ This is under MIT. I dont like headers into sourcefiles so I wont add any.
 ## Status
 
 It does seems to handle the logic function test. YAY. I have not yet checked the weights.  
-Next step would be some pattern recognition. Tomorrow maybe.  
+It kind of handles semeion but not very well. Get to 85% accuracy with a 50/50 learn/test spread of the dataset.  
 For some reasons the random number generator seems to yield number that quickly drifts apparts from the one given as an example.  
 It's late so I'm gonna blame floating point arithmetic implementation differences and do something else more interseting with the remaining of my evening.  
 
